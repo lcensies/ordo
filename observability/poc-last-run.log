@@ -1,0 +1,32 @@
+
+[1mordo observability PoC — tracee: downloader vs ordo[0m
+  target:   [32mdev-vm-2[0m
+  scenario: [33mexec[0m
+  backend:  [33mssh:dev-vm-2[0m
+  events:   [2mexecve,execveat,security_socket_connect[0m
+  query:    [2mcurl,wget[0m (downloader indicators)
+
+[1m==>[0m serving tool via python http.server on dev-vm-2 :18777 (setup, outside capture)
+[1m==>[0m Baseline: curl download on dev-vm-2 (no ordo)
+[1m==>[0m starting tracee on dev-vm-2 (events=execve,execveat,security_socket_connect)
+    curl -fsSL http://127.0.0.1:18777/ordo-poc-tool-src.sh -o /tmp/ordo-poc-tool ...
+[tool] ran as ubuntu@ubuntu
+
+[1m==>[0m Baseline tracee events (query=curl,wget)
+  execve                   sshd-session   bash -c curl -fsSL http://127.0.0.1:18777/ordo-poc-tool-src.sh -o /tmp/ordo-poc-tool && chmod +x /tmp/ordo-poc-tool &&
+  execve                   bash           curl -fsSL http://127.0.0.1:18777/ordo-poc-tool-src.sh -o /tmp/ordo-poc-tool
+  security_socket_connect  curl           ?:?
+  security_socket_connect  curl           ?:?
+  security_socket_connect  curl           127.0.0.1:18777
+
+[1m==>[0m Evasion: ordo send -t ssh:dev-vm-2 -r /tmp/ordo-poc-tool --exec
+[1m==>[0m starting tracee on dev-vm-2 (events=execve,execveat,security_socket_connect)
+
+[1m==>[0m Evasion tracee events (query=curl,wget)
+  (none matched query='curl,wget')
+
+[1m==>[0m Comparison (downloader events matching 'curl,wget' on dev-vm-2)
+  baseline (curl):  [33m5[0m event(s)
+  evasion  (ordo):  [33m0[0m event(s)
+
+[32mPASS[0m — tracee saw the curl/wget baseline but no downloader activity during the ordo transfer.
